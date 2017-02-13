@@ -4,41 +4,59 @@ function WriteFile(str)
 {
 	fs.writeFile("crawl_out.txt", str, 'utf8', function(err) {
 	    if(err) return console.log(err);
-	    console.log("Asynchronous read: " + data.toString());
+	    console.log("Asynchronous write: " + data.toString());
 	}); 
 }
 
-var Nightmare = require('nightmare');       
-var nightmare = Nightmare({ show: true })
+var Nightmare = require('nightmare'), 
+ 	vo = require('vo'),      
+	nightmare = Nightmare({ show: true });
 
-var dataUnits;
-nightmare
-	.goto('https://www.thecrossroadsmall.com/en/directory.html')
-	// .scrollTo(bottom, left)
-	.wait('.mall-directory-list--wrapper')
-	// get list content
-	// for each item in the list, add the name to the list, then click link...
-	.evaluate(function () {
-		// return document.querySelector('.Units-Layer').childNodes;
-		return document.getElementsByClassName("mall-directory-list__content__info__info-sale");
-	})
-	.end()
-	.then(function(result) {
-		dataUnits = result;
-		console.log("" + dataUnits.length);
-		for(var i = 0; i < dataUnits.length; i++){
-			console.log(i);
+var run = function*() {
+	var result = yield nightmare
+	  .goto('https://www.thecrossroadsmall.com/en/directory/map.html')
+	  .wait('.Units')
+	  .evaluate(function () {
+	       // var parent = document.querySelector('.Units-Layer');
+	       var children = document.getElementsByClassName("Units");
+	       var selectors = new Array();
+	       for(var i = 0; i < children.length; i++){
+	       		var dataunit = children[i].getAttribute("data-unit");
+	       		selectors.push('[data-unit="' + dataunit + '"]')
+	       }	
+	       return selectors;
+	  })
+	  .catch(function (error) {
+	    console.error('failed:', error);
+	  });
+
+	var stores;
+	yield function() {
+		for(var i = 0; i < result.length; i++){
+			var name = nightmare
+			.click(result[i])
+			.wait('.pop-up-window-container')
+			.evaluate(function(){
+	   			return document.querySelector('.store-detail').firstChild.textContent;
+	   		});
+
+	   		stores.push(name);
 		}
-	})
-	.catch(function (error) {
-		console.error('failed:', error);
-	});
-	// .click('.Units')
-	// .wait('.pop-up-window-container')
-	// .evaluate(function () {
-	// 	var child = document.querySelector('.store-detail').firstElementChild;
-	// 	return child.textContent;
-	// })
+	}
 	
+	yield nightmare.end();
+	return stores;
+}
+
+vo(run)(function(err, result) {
+  if (err) throw err
+
+  results.forEach(function (text) {
+    console.log(text)
+  })
+})
+
+
+
 
 
