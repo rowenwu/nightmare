@@ -36,6 +36,7 @@ var dataUnits = nightmare
 			        .wait(selector)
 			        .click(selector)
 					.wait('.pop-up-window-container')
+					.wait(1000)
 			        .evaluate(function(){
 						return document.querySelector('.store-detail').firstChild.textContent + "\n";
 					})
