@@ -15,8 +15,8 @@ var Nightmare = require('nightmare'),
 
 var dataUnits = nightmare
     .goto('https://www.thecrossroadsmall.com/en/directory/map.html')
-    .wait('.Units')
-    .click('.Units')
+    .wait('[data-unit="18633"]')
+    .click('[data-unit="18633"]')
     .wait('.pop-up-window-container')
     .evaluate(function () {
        // var parent = document.querySelector('.Units-Layer');
@@ -24,32 +24,46 @@ var dataUnits = nightmare
        var selectors = new Array();
        for(var i = 0; i < children.length; i++){
        		var dataunit = children[i].getAttribute("data-unit");
-       		selectors.push('[data-unit="' + dataunit + '"]')
+       		if(dataunit != null)
+       			selectors.push('[data-unit="' + dataunit + '"]')
        }	
        return selectors;
     })
- //    .then(function(result){
-	//   	result.reduce(function(accumulator, selector) {
-	// 	    return nightmare
-	// 	        .wait(selector)
-	// 	        .click(selector)
-	//			
-	// 	        .evaluate(function(){
-	// 				WriteFile(document.querySelector('.store-detail').firstChild.textContent);
-	// 			})
-	// 	});
-	// })
-    // .then(function(){
-    // 	return nightmare.end();
+    .then(function(result){
+		return result.reduce(function (accumulator, selector) {
+	  		return accumulator.then(function(stores){
+			    return nightmare
+			        .wait(selector)
+			        .click(selector)
+					.wait('.pop-up-window-container')
+			        .evaluate(function(){
+						return document.querySelector('.store-detail').firstChild.textContent + "\n";
+					})
+					.then(function(store){
+						stores.push(store);
+						return stores;
+					});
+			});
+		}, Promise.resolve([]));
+	})
+    // .end()
+    // .then(function(result) {
+    // 	for(var i = 0; i < result.length; i++){
+    // 		WriteFile(result[i] +'\n');
+    // 		console.log(result[i]);
+    // 	}
+    // 	wstream.end();
     // })
-    .end()
-    .then(function(result) {
-    	for(var i = 0; i < result.length; i++){
-    		WriteFile(result[i] +'\n');
-    		console.log(result[i]);
-    	}
+    .then(function(results){
+    	
+    	for(i = 0; i < results.length; i++)
+    		WriteFile(results[i]);
     	wstream.end();
+    	return nightmare.end();
     })
+    .then(function() {
+    	console.log('done');
+  	})
     .catch(function (error) {
     	console.error('failed:', error);
     });
